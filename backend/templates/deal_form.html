@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}Edit{% else %}New{% endif %} Deal | NexusCRM{% endblock %}
+{% block page_title %}{% if editing %}Edit Deal{% else %}New Deal{% endif %}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:750px">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" name="title" value="{{ record.title|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Company</label>
+        <input type="text" name="company" value="{{ record.company|default:'' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Value</label>
+        <input type="number" step="0.01" name="value" value="{{ record.value|default:'0' }}">
+      </div>
+      <div class="form-group">
+        <label>Stage</label>
+        <select name="stage">
+          <option value="qualification" {% if record.stage == 'qualification' %}selected{% endif %}>Qualification</option>
+          <option value="proposal" {% if record.stage == 'proposal' %}selected{% endif %}>Proposal</option>
+          <option value="negotiation" {% if record.stage == 'negotiation' %}selected{% endif %}>Negotiation</option>
+          <option value="won" {% if record.stage == 'won' %}selected{% endif %}>Won</option>
+          <option value="lost" {% if record.stage == 'lost' %}selected{% endif %}>Lost</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Probability</label>
+        <input type="number" name="probability" value="{{ record.probability|default:'0' }}">
+      </div>
+      <div class="form-group">
+        <label>Expected Close</label>
+        <input type="date" name="expected_close" value="{{ record.expected_close|date:'Y-m-d'|default:'' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea name="notes">{{ record.notes|default:'' }}</textarea>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:1rem">
+      <button type="submit" class="btn btn-primary">{% if editing %}Update{% else %}Create{% endif %} Deal</button>
+      <a href="/deals/" class="btn" style="background:var(--border);color:var(--text)">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
