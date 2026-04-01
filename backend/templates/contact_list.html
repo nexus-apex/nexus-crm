@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Contacts | NexusCRM{% endblock %}
+{% block page_title %}Contacts{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+  <form class="search-bar" method="get" style="flex:1;margin-bottom:0">
+    <input type="text" name="search" value="{{ search }}" placeholder="Search contacts...">
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All Status</option>
+      <option value="lead" {% if status_filter == 'lead' %}selected{% endif %}>Lead</option>
+      <option value="customer" {% if status_filter == 'customer' %}selected{% endif %}>Customer</option>
+      <option value="prospect" {% if status_filter == 'prospect' %}selected{% endif %}>Prospect</option>
+      <option value="churned" {% if status_filter == 'churned' %}selected{% endif %}>Churned</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+  </form>
+  <a href="/contacts/create/" class="btn btn-primary">+ New Contact</a>
+</div>
+
+<div class="card">
+  {% if records %}
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for r in records %}
+      <tr>
+        <td><a href="/contacts/{{ r.pk }}/edit/"><strong>{{ r.name }}</strong></a></td>
+        <td>{{ r.company|default:"-" }}</td>
+        <td style="color:var(--muted)">{{ r.email|default:"-" }}</td>
+        <td>{{ r.phone|default:"-" }}</td>
+        <td><span class="badge badge-blue">{{ r.get_status_display }}</span></td>
+        <td class="actions">
+          <a href="/contacts/{{ r.pk }}/edit/" class="btn btn-primary btn-sm">Edit</a>
+          <form method="post" action="/contacts/{{ r.pk }}/delete/" style="display:inline" onsubmit="return confirm('Delete?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">Del</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <p>No contacts found.</p>
+    <a href="/contacts/create/" class="btn btn-primary" style="margin-top:1rem">Create Contact</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
