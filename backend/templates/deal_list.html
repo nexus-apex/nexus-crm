@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Deals | NexusCRM{% endblock %}
+{% block page_title %}Deals{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+  <form class="search-bar" method="get" style="flex:1;margin-bottom:0">
+    <input type="text" name="search" value="{{ search }}" placeholder="Search deals...">
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All Stage</option>
+      <option value="qualification" {% if status_filter == 'qualification' %}selected{% endif %}>Qualification</option>
+      <option value="proposal" {% if status_filter == 'proposal' %}selected{% endif %}>Proposal</option>
+      <option value="negotiation" {% if status_filter == 'negotiation' %}selected{% endif %}>Negotiation</option>
+      <option value="won" {% if status_filter == 'won' %}selected{% endif %}>Won</option>
+      <option value="lost" {% if status_filter == 'lost' %}selected{% endif %}>Lost</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+  </form>
+  <a href="/deals/create/" class="btn btn-primary">+ New Deal</a>
+</div>
+
+<div class="card">
+  {% if records %}
+  <table>
+    <thead>
+      <tr><th>Title</th><th>Company</th><th>Value</th><th>Stage</th><th>Probability</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for r in records %}
+      <tr>
+        <td><a href="/deals/{{ r.pk }}/edit/"><strong>{{ r.title }}</strong></a></td>
+        <td>{{ r.company|default:"-" }}</td>
+        <td>{{ r.value|floatformat:2 }}</td>
+        <td><span class="badge badge-blue">{{ r.get_stage_display }}</span></td>
+        <td>{{ r.probability|default:"-" }}</td>
+        <td class="actions">
+          <a href="/deals/{{ r.pk }}/edit/" class="btn btn-primary btn-sm">Edit</a>
+          <form method="post" action="/deals/{{ r.pk }}/delete/" style="display:inline" onsubmit="return confirm('Delete?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">Del</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <p>No deals found.</p>
+    <a href="/deals/create/" class="btn btn-primary" style="margin-top:1rem">Create Deal</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
