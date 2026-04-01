@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Activities | NexusCRM{% endblock %}
+{% block page_title %}Activities{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+  <form class="search-bar" method="get" style="flex:1;margin-bottom:0">
+    <input type="text" name="search" value="{{ search }}" placeholder="Search activities...">
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All Activity Type</option>
+      <option value="call" {% if status_filter == 'call' %}selected{% endif %}>Call</option>
+      <option value="email" {% if status_filter == 'email' %}selected{% endif %}>Email</option>
+      <option value="meeting" {% if status_filter == 'meeting' %}selected{% endif %}>Meeting</option>
+      <option value="task" {% if status_filter == 'task' %}selected{% endif %}>Task</option>
+      <option value="note" {% if status_filter == 'note' %}selected{% endif %}>Note</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+  </form>
+  <a href="/activities/create/" class="btn btn-primary">+ New Activity</a>
+</div>
+
+<div class="card">
+  {% if records %}
+  <table>
+    <thead>
+      <tr><th>Subject</th><th>Related To</th><th>Activity Type</th><th>Scheduled</th><th>Done</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for r in records %}
+      <tr>
+        <td><a href="/activities/{{ r.pk }}/edit/"><strong>{{ r.subject }}</strong></a></td>
+        <td>{{ r.related_to|default:"-" }}</td>
+        <td><span class="badge badge-blue">{{ r.get_activity_type_display }}</span></td>
+        <td style="color:var(--muted)">{{ r.scheduled|date:"M d, Y"|default:"-" }}</td>
+        <td><span class="badge {{ r.done|yesno:\"badge-green,badge-red\" }}">{{ r.done|yesno:\"Yes,No\" }}</span></td>
+        <td class="actions">
+          <a href="/activities/{{ r.pk }}/edit/" class="btn btn-primary btn-sm">Edit</a>
+          <form method="post" action="/activities/{{ r.pk }}/delete/" style="display:inline" onsubmit="return confirm('Delete?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">Del</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <p>No activities found.</p>
+    <a href="/activities/create/" class="btn btn-primary" style="margin-top:1rem">Create Activity</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
