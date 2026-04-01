@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}Edit{% else %}New{% endif %} Activity | NexusCRM{% endblock %}
+{% block page_title %}{% if editing %}Edit Activity{% else %}New Activity{% endif %}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:750px">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group">
+        <label>Subject</label>
+        <input type="text" name="subject" value="{{ record.subject|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Related To</label>
+        <input type="text" name="related_to" value="{{ record.related_to|default:'' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Activity Type</label>
+        <select name="activity_type">
+          <option value="call" {% if record.activity_type == 'call' %}selected{% endif %}>Call</option>
+          <option value="email" {% if record.activity_type == 'email' %}selected{% endif %}>Email</option>
+          <option value="meeting" {% if record.activity_type == 'meeting' %}selected{% endif %}>Meeting</option>
+          <option value="task" {% if record.activity_type == 'task' %}selected{% endif %}>Task</option>
+          <option value="note" {% if record.activity_type == 'note' %}selected{% endif %}>Note</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Scheduled</label>
+        <input type="date" name="scheduled" value="{{ record.scheduled|date:'Y-m-d'|default:'' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="checkbox-wrapper">
+        <input type="checkbox" name="done" id="id_done" {% if record.done %}checked{% endif %}>
+        <label for="id_done" style="margin-bottom:0">Done</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea name="notes">{{ record.notes|default:'' }}</textarea>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:1rem">
+      <button type="submit" class="btn btn-primary">{% if editing %}Update{% else %}Create{% endif %} Activity</button>
+      <a href="/activities/" class="btn" style="background:var(--border);color:var(--text)">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
