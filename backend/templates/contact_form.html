@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}Edit{% else %}New{% endif %} Contact | NexusCRM{% endblock %}
+{% block page_title %}{% if editing %}Edit Contact{% else %}New Contact{% endif %}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:750px">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" name="name" value="{{ record.name|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Company</label>
+        <input type="text" name="company" value="{{ record.company|default:'' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" name="email" value="{{ record.email|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="text" name="phone" value="{{ record.phone|default:'' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status">
+          <option value="lead" {% if record.status == 'lead' %}selected{% endif %}>Lead</option>
+          <option value="customer" {% if record.status == 'customer' %}selected{% endif %}>Customer</option>
+          <option value="prospect" {% if record.status == 'prospect' %}selected{% endif %}>Prospect</option>
+          <option value="churned" {% if record.status == 'churned' %}selected{% endif %}>Churned</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Source</label>
+        <select name="source">
+          <option value="website" {% if record.source == 'website' %}selected{% endif %}>Website</option>
+          <option value="referral" {% if record.source == 'referral' %}selected{% endif %}>Referral</option>
+          <option value="social" {% if record.source == 'social' %}selected{% endif %}>Social</option>
+          <option value="direct" {% if record.source == 'direct' %}selected{% endif %}>Direct</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Value</label>
+        <input type="number" step="0.01" name="value" value="{{ record.value|default:'0' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea name="notes">{{ record.notes|default:'' }}</textarea>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:1rem">
+      <button type="submit" class="btn btn-primary">{% if editing %}Update{% else %}Create{% endif %} Contact</button>
+      <a href="/contacts/" class="btn" style="background:var(--border);color:var(--text)">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
