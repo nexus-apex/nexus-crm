@@ -3,9 +3,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.conf import settings
-from .models import Record
+from django.db.models import Sum, Count
+from .models import Contact, Deal, Activity
 
 
 def login_view(request):
@@ -30,67 +29,179 @@ def logout_view(request):
 
 @login_required
 def dashboard_view(request):
-    total = Record.objects.count()
-    active = Record.objects.filter(status='active').count()
-    pending = Record.objects.filter(status='pending').count()
-    inactive = Record.objects.filter(status='inactive').count()
-    recent = Record.objects.all()[:10]
-    return render(request, 'dashboard.html', {
-        'total': total, 'active': active, 'pending': pending,
-        'inactive': inactive, 'recent': recent,
-    })
+    ctx = {}
+    ctx['contact_count'] = Contact.objects.count()
+    ctx['contact_lead'] = Contact.objects.filter(status='lead').count()
+    ctx['contact_customer'] = Contact.objects.filter(status='customer').count()
+    ctx['contact_prospect'] = Contact.objects.filter(status='prospect').count()
+    ctx['contact_total_value'] = Contact.objects.aggregate(t=Sum('value'))['t'] or 0
+    ctx['deal_count'] = Deal.objects.count()
+    ctx['deal_qualification'] = Deal.objects.filter(stage='qualification').count()
+    ctx['deal_proposal'] = Deal.objects.filter(stage='proposal').count()
+    ctx['deal_negotiation'] = Deal.objects.filter(stage='negotiation').count()
+    ctx['deal_total_value'] = Deal.objects.aggregate(t=Sum('value'))['t'] or 0
+    ctx['activity_count'] = Activity.objects.count()
+    ctx['activity_call'] = Activity.objects.filter(activity_type='call').count()
+    ctx['activity_email'] = Activity.objects.filter(activity_type='email').count()
+    ctx['activity_meeting'] = Activity.objects.filter(activity_type='meeting').count()
+    ctx['recent'] = Contact.objects.all()[:10]
+    return render(request, 'dashboard.html', ctx)
 
 
 @login_required
-def records_view(request):
-    records = Record.objects.all()
-    status_filter = request.GET.get('status', '')
+def contact_list(request):
+    qs = Contact.objects.all()
     search = request.GET.get('search', '')
-    if status_filter:
-        records = records.filter(status=status_filter)
     if search:
-        records = records.filter(name__icontains=search)
-    return render(request, 'records.html', {'records': records, 'status_filter': status_filter, 'search': search})
+        qs = qs.filter(name__icontains=search)
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    return render(request, 'contact_list.html', {'records': qs, 'search': search, 'status_filter': status_filter})
 
 
 @login_required
-def record_create(request):
+def contact_create(request):
     if request.method == 'POST':
-        Record.objects.create(
-            name=request.POST.get('name', ''),
-            description=request.POST.get('description', ''),
-            status=request.POST.get('status', 'active'),
-            email=request.POST.get('email', ''),
-            phone=request.POST.get('phone', ''),
-            amount=request.POST.get('amount', 0) or 0,
-            notes=request.POST.get('notes', ''),
-        )
-        return redirect('/records/')
-    return render(request, 'record_form.html', {'editing': False})
+        obj = Contact()
+        obj.name = request.POST.get('name', '')
+        obj.company = request.POST.get('company', '')
+        obj.email = request.POST.get('email', '')
+        obj.phone = request.POST.get('phone', '')
+        obj.status = request.POST.get('status', '')
+        obj.source = request.POST.get('source', '')
+        obj.value = request.POST.get('value') or 0
+        obj.notes = request.POST.get('notes', '')
+        obj.save()
+        return redirect('/contacts/')
+    return render(request, 'contact_form.html', {'editing': False})
 
 
 @login_required
-def record_edit(request, pk):
-    record = get_object_or_404(Record, pk=pk)
+def contact_edit(request, pk):
+    obj = get_object_or_404(Contact, pk=pk)
     if request.method == 'POST':
-        record.name = request.POST.get('name', record.name)
-        record.description = request.POST.get('description', record.description)
-        record.status = request.POST.get('status', record.status)
-        record.email = request.POST.get('email', record.email)
-        record.phone = request.POST.get('phone', record.phone)
-        record.amount = request.POST.get('amount', record.amount) or 0
-        record.notes = request.POST.get('notes', record.notes)
-        record.save()
-        return redirect('/records/')
-    return render(request, 'record_form.html', {'record': record, 'editing': True})
+        obj.name = request.POST.get('name', '')
+        obj.company = request.POST.get('company', '')
+        obj.email = request.POST.get('email', '')
+        obj.phone = request.POST.get('phone', '')
+        obj.status = request.POST.get('status', '')
+        obj.source = request.POST.get('source', '')
+        obj.value = request.POST.get('value') or 0
+        obj.notes = request.POST.get('notes', '')
+        obj.save()
+        return redirect('/contacts/')
+    return render(request, 'contact_form.html', {'record': obj, 'editing': True})
 
 
 @login_required
-def record_delete(request, pk):
-    record = get_object_or_404(Record, pk=pk)
+def contact_delete(request, pk):
+    obj = get_object_or_404(Contact, pk=pk)
     if request.method == 'POST':
-        record.delete()
-    return redirect('/records/')
+        obj.delete()
+    return redirect('/contacts/')
+
+
+@login_required
+def deal_list(request):
+    qs = Deal.objects.all()
+    search = request.GET.get('search', '')
+    if search:
+        qs = qs.filter(title__icontains=search)
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        qs = qs.filter(stage=status_filter)
+    return render(request, 'deal_list.html', {'records': qs, 'search': search, 'status_filter': status_filter})
+
+
+@login_required
+def deal_create(request):
+    if request.method == 'POST':
+        obj = Deal()
+        obj.title = request.POST.get('title', '')
+        obj.company = request.POST.get('company', '')
+        obj.value = request.POST.get('value') or 0
+        obj.stage = request.POST.get('stage', '')
+        obj.probability = request.POST.get('probability') or 0
+        obj.expected_close = request.POST.get('expected_close') or None
+        obj.notes = request.POST.get('notes', '')
+        obj.save()
+        return redirect('/deals/')
+    return render(request, 'deal_form.html', {'editing': False})
+
+
+@login_required
+def deal_edit(request, pk):
+    obj = get_object_or_404(Deal, pk=pk)
+    if request.method == 'POST':
+        obj.title = request.POST.get('title', '')
+        obj.company = request.POST.get('company', '')
+        obj.value = request.POST.get('value') or 0
+        obj.stage = request.POST.get('stage', '')
+        obj.probability = request.POST.get('probability') or 0
+        obj.expected_close = request.POST.get('expected_close') or None
+        obj.notes = request.POST.get('notes', '')
+        obj.save()
+        return redirect('/deals/')
+    return render(request, 'deal_form.html', {'record': obj, 'editing': True})
+
+
+@login_required
+def deal_delete(request, pk):
+    obj = get_object_or_404(Deal, pk=pk)
+    if request.method == 'POST':
+        obj.delete()
+    return redirect('/deals/')
+
+
+@login_required
+def activity_list(request):
+    qs = Activity.objects.all()
+    search = request.GET.get('search', '')
+    if search:
+        qs = qs.filter(subject__icontains=search)
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        qs = qs.filter(activity_type=status_filter)
+    return render(request, 'activity_list.html', {'records': qs, 'search': search, 'status_filter': status_filter})
+
+
+@login_required
+def activity_create(request):
+    if request.method == 'POST':
+        obj = Activity()
+        obj.subject = request.POST.get('subject', '')
+        obj.related_to = request.POST.get('related_to', '')
+        obj.activity_type = request.POST.get('activity_type', '')
+        obj.scheduled = request.POST.get('scheduled') or None
+        obj.done = request.POST.get('done') == 'on'
+        obj.notes = request.POST.get('notes', '')
+        obj.save()
+        return redirect('/activities/')
+    return render(request, 'activity_form.html', {'editing': False})
+
+
+@login_required
+def activity_edit(request, pk):
+    obj = get_object_or_404(Activity, pk=pk)
+    if request.method == 'POST':
+        obj.subject = request.POST.get('subject', '')
+        obj.related_to = request.POST.get('related_to', '')
+        obj.activity_type = request.POST.get('activity_type', '')
+        obj.scheduled = request.POST.get('scheduled') or None
+        obj.done = request.POST.get('done') == 'on'
+        obj.notes = request.POST.get('notes', '')
+        obj.save()
+        return redirect('/activities/')
+    return render(request, 'activity_form.html', {'record': obj, 'editing': True})
+
+
+@login_required
+def activity_delete(request, pk):
+    obj = get_object_or_404(Activity, pk=pk)
+    if request.method == 'POST':
+        obj.delete()
+    return redirect('/activities/')
 
 
 @login_required
@@ -98,12 +209,10 @@ def settings_view(request):
     return render(request, 'settings.html')
 
 
-# API endpoints
 @login_required
 def api_stats(request):
-    return JsonResponse({
-        'total': Record.objects.count(),
-        'active': Record.objects.filter(status='active').count(),
-        'pending': Record.objects.filter(status='pending').count(),
-        'inactive': Record.objects.filter(status='inactive').count(),
-    })
+    data = {}
+    data['contact_count'] = Contact.objects.count()
+    data['deal_count'] = Deal.objects.count()
+    data['activity_count'] = Activity.objects.count()
+    return JsonResponse(data)
